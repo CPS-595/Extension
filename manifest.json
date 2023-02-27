@@ -1,7 +1,7 @@
 {
     "name": "My Extension",
     "version": "0.1.0",
-    "description": "Saving timestamps in YT videos",
+    "description": "Extension to store the private key",
     "permissions": ["storage", "tabs"],
     "host_permissions": ["https://*.youtube.com/*"],
     "background": {

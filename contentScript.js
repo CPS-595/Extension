@@ -1,6 +1,5 @@
 (() => {
-      
-
+    console.log("in content")
     async function fetchData() {
         console.log("in fecth data")
         const options = {
@@ -16,7 +15,7 @@
         console.log("record", record)
         document.getElementById("message").innerHTML = record.message;
     }
-    fetchData(); 
+    // fetchData(); 
 
     let youtubeLeftControls, youtubePlayer;
     let currentVideo = "";
