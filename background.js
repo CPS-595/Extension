@@ -16,6 +16,13 @@ chrome.runtime.onInstalled.addListener(function (object) {
     }
 });
 
+// var ciphertext = CryptoJS.AES.encrypt('my message', 'secret key 123').toString();
+
+// // Decrypt
+// var bytes  = CryptoJS.AES.decrypt(ciphertext, 'secret key 123');
+// var originalText = bytes.toString(CryptoJS.enc.Utf8);
+
+// console.log(originalText); // 'my message'Z
 function ab2str(buf) {
   return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
