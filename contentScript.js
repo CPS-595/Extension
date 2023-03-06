@@ -22,13 +22,67 @@
     let currentVideoBookmarks = [];
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
-        const { type, value, videoId } = obj;
-
+        console.log("in contentscript")
+        const { type, value } = obj;
         if (type === "NEW") {
-            currentVideo = videoId;
-            newVideoLoaded();
+            const createNewButton = document.getElementById("create-new");
+            if (createNewButton) {
+                createNewButton.addEventListener("click", createNewButtonHandler);
+            }
         }
     });
+
+    const createNewButtonHandler = () => {
+        console.log("createNewButtonHandler called")
+        const createButton = document.getElementById("create");
+        if (createButton) {
+            createButton.addEventListener("click", createButtonHandler);
+        }
+        console.log("createButton", createButton)
+    }
+
+    const createButtonHandler = () => {
+        console.log("createButtonHandler called")
+        const name = document.getElementById("name").value;
+        const url = document.getElementById("url").value;
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const error = document.getElementById("error");
+        console.log("name", name)
+        console.log("url", url)
+        console.log("username", username)
+        console.log("password", password)
+        const validate = invalidFields(name, url, username, password)
+        if (validate) {
+            error.style.display="flex"
+            error.innerHTML = validate
+        }
+    }
+
+    const invalidFields = (name, url, username, password) => {
+        if (name == "") {
+            return "Name is Required!"
+        } else if (url == "") {
+            return "URL is Required!"
+        } else if (!isValidUrl(url)) {
+            return "Invalid URL!"
+        } else if (username == "") {
+            return "Username is Required!"
+        } else if (password == "") {
+            return "Password is Required!"
+        }
+        return false
+    }
+
+    const isValidUrl = urlString => {
+        var urlPattern = new RegExp('^(https?:\\/\\/)?'+ // validate protocol
+      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // validate domain name
+      '((\\d{1,3}\\.){3}\\d{1,3}))'+ // validate OR ip (v4) address
+      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // validate port and path
+      '(\\?[;&a-z\\d%_.~+=-]*)?'+ // validate query string
+      '(\\#[-a-z\\d_]*)?$','i'); // validate fragment locator
+        return !!urlPattern.test(urlString);
+    }
 
     const newVideoLoaded = () => {
         const bookmarkBtnExists = document.getElementsByClassName("bookmark-btn")[0];
@@ -62,7 +116,7 @@
         });
     }
 
-    newVideoLoaded();
+    // newVideoLoaded();
 })();
 
 const getTime = t => {

@@ -136,14 +136,15 @@ async function fetchData() {
 }
 
 
-chrome.tabs.onUpdated.addListener((tabId, tab) => {
-    if (tab.url && tab.url.includes("youtube.com/watch")) {
-      const queryParameters = tab.url.split("?")[1];
-      const urlParameters = new URLSearchParams(queryParameters);
-      console.log("called", urlParameters)
-      chrome.tabs.sendMessage(tabId, {
-        type: "NEW",
-        videoId: urlParameters.get("v"),
-      });
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (tab.url && tab.url.includes("localhost:3000/resources")) {
+      // const queryParameters = tab.url.split("?")[1];
+      // const urlParameters = new URLSearchParams(queryParameters);
+      console.log("called on tab", changeInfo)
+        console.log("sending")
+        chrome.tabs.sendMessage(tabId, {
+          type: "NEW",
+          // videoId: urlParameters.get("v"),
+        });
     }
   });
