@@ -41,7 +41,7 @@
         console.log("createButton", createButton)
     }
 
-    const createButtonHandler = () => {
+    const createButtonHandler = async () => {
         console.log("createButtonHandler called")
         const name = document.getElementById("name").value;
         const url = document.getElementById("url").value;
@@ -56,6 +56,45 @@
         if (validate) {
             error.style.display="flex"
             error.innerHTML = validate
+        } else {
+          chrome.storage.local.get(['publicKey'], async (result) => {
+            const publicKey = result.publicKey;            
+            const importedPublicKey =  await self.crypto.subtle.importKey(
+              "jwk", //can be "jwk" or "raw"
+                publicKey,
+                {   //these are the algorithm options
+                  name: "RSA-OAEP",
+                  hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+              },
+              false, //whether the key is extractable (i.e. can be used in exportKey)
+              ["encrypt"]
+            )
+            console.log("importedPublicKey", importedPublicKey)
+            let enc = new TextEncoder();
+            self.crypto.subtle.encrypt(
+              {
+                  name: "RSA-OAEP",
+                  //label: Uint8Array([...]) //optional
+              },
+              importedPublicKey, //from generateKey or importKey above
+              enc.encode(password) //ArrayBuffer of data you want to encrypt
+            )
+            .then(function(encrypted){
+                //returns an ArrayBuffer containing the encrypted data
+                const encryptedString = ab2str(encrypted);
+                console.log("encryptedString", encryptedString);
+                var data = {
+                  password: encryptedString,
+                  more: 'More data'
+                };
+
+              // send data through a DOM event
+              document.dispatchEvent(new CustomEvent('csEvent', {detail: data}));
+            })
+            .catch(function(err){
+                console.error(err);
+            });
+          });
         }
     }
 
@@ -82,6 +121,45 @@
       '(\\?[;&a-z\\d%_.~+=-]*)?'+ // validate query string
       '(\\#[-a-z\\d_]*)?$','i'); // validate fragment locator
         return !!urlPattern.test(urlString);
+    }
+
+    function ab2str(buf) {
+      return String.fromCharCode.apply(null, new Uint8Array(buf));
+    }
+
+    const encryptPassword = (password) => {
+      chrome.storage.local.get(['publicKey'], async (result) => {
+        const publicKey = result.publicKey;            
+        const importedPublicKey =  await self.crypto.subtle.importKey(
+          "jwk", //can be "jwk" or "raw"
+            publicKey,
+            {   //these are the algorithm options
+              name: "RSA-OAEP",
+              hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+          },
+          false, //whether the key is extractable (i.e. can be used in exportKey)
+          ["encrypt"]
+        )
+        console.log("importedPublicKey", importedPublicKey)
+        let enc = new TextEncoder();
+        self.crypto.subtle.encrypt(
+          {
+              name: "RSA-OAEP",
+              //label: Uint8Array([...]) //optional
+          },
+          importedPublicKey, //from generateKey or importKey above
+          enc.encode(password) //ArrayBuffer of data you want to encrypt
+        )
+        .then(function(encrypted){
+            //returns an ArrayBuffer containing the encrypted data
+            const encryptedString = ab2str(encrypted);
+            console.log("encryptedString", encryptedString);
+            return encryptedString;
+        })
+        .catch(function(err){
+            console.error(err);
+        });
+      });
     }
 
     const newVideoLoaded = () => {

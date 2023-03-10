@@ -137,7 +137,7 @@ async function fetchData() {
 
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (tab.url && tab.url.includes("localhost:3000/resources")) {
+    if (tab.url && tab.url.includes("localhost:3000/credentials")) {
       // const queryParameters = tab.url.split("?")[1];
       // const urlParameters = new URLSearchParams(queryParameters);
       console.log("called on tab", changeInfo)
