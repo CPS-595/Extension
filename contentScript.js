@@ -30,7 +30,8 @@
                 createNewButton.addEventListener("click", createNewButtonHandler);
             }
             document.addEventListener("decryptpassword", async (event) => {
-                const password = event.detail;
+                console.log("event", event.detail)
+                const password = event.detail.password;
                 console.log("in encrypt password",password);
 
                 chrome.storage.local.get(['privateKey'], async (result) => {
@@ -65,6 +66,8 @@
                         console.log("decrypted", dec.decode(decrypted));
                         //returns an ArrayBuffer containing the decrypted data
                         // console.log("decrypted", new Uint8Array(null, decrypted)); 
+                        const encryptedPass = document.getElementById(`password-${event.detail.id}`);
+                        encryptedPass.innerHTML = dec.decode(decrypted);
                       
                     })
                     .catch(function(err){
