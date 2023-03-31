@@ -23,14 +23,63 @@
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         console.log("in contentscript")
-        const { type, value } = obj;
+        const { type }  = obj;
         if (type === "NEW") {
             const createNewButton = document.getElementById("create-new");
             if (createNewButton) {
                 createNewButton.addEventListener("click", createNewButtonHandler);
             }
+            document.addEventListener("decryptpassword", async (event) => {
+                const password = event.detail;
+                console.log("in encrypt password",password);
+
+                chrome.storage.local.get(['privateKey'], async (result) => {
+                    const privateKey = result.privateKey;
+
+                    const importedPrivateKey =  await self.crypto.subtle.importKey(
+                        "jwk", //can be "jwk" or "raw"
+                        privateKey,
+                          {   //these are the algorithm options
+                            name: "RSA-OAEP",
+                            hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+                        },
+                        false, //whether the key is extractable (i.e. can be used in exportKey)
+                        ["decrypt"]
+                    )
+                    console.log("importedPrivateKey", importedPrivateKey)
+
+                    const encryptedAb = str2ab(password);
+                    console.log("encryptedAb", encryptedAb) 
+                    self.crypto.subtle.decrypt(
+                        {
+                            name: "RSA-OAEP",
+                            //label: Uint8Array([...]) //optional
+                        },
+                        importedPrivateKey, //from generateKey or importKey above
+                        encryptedAb //ArrayBuffer of the data
+                    )
+                    .then(function(decrypted){
+                        
+                        console.log("decrypted", decrypted)
+                        let dec = new TextDecoder();
+                        console.log("decrypted", dec.decode(decrypted));
+                        //returns an ArrayBuffer containing the decrypted data
+                        // console.log("decrypted", new Uint8Array(null, decrypted)); 
+                      
+                    })
+                    .catch(function(err){
+                        console.error(err);
+                    });
+                });
+            
+
+
+
+            });
         }
     });
+
+    
 
     const createNewButtonHandler = () => {
         console.log("createNewButtonHandler called")
@@ -85,7 +134,6 @@
                 console.log("encryptedString", encryptedString);
                 var data = {
                   password: encryptedString,
-                  more: 'More data'
                 };
 
               // send data through a DOM event
@@ -123,8 +171,21 @@
         return !!urlPattern.test(urlString);
     }
 
+    function str2ab(str) {
+        const buf = new ArrayBuffer(str.length);
+        const bufView = new Uint8Array(buf);
+        for (let i = 0, strLen = str.length; i < strLen; i++) {
+          bufView[i] = str.charCodeAt(i);
+        }
+        return buf;
+      }
+
     function ab2str(buf) {
       return String.fromCharCode.apply(null, new Uint8Array(buf));
+    }
+
+    const decryptPassword = (password) => {
+
     }
 
     const encryptPassword = (password) => {
