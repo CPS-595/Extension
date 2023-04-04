@@ -22,7 +22,7 @@
     let currentVideoBookmarks = [];
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
-        console.log("in contentscript")
+        console.log("in contentscript", obj)
         const { type }  = obj;
         if (type === "NEW") {
             const createNewButton = document.getElementById("create-new");
