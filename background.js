@@ -54,10 +54,10 @@ async function fetchData() {
     );
     console.log("exportedPublicKey", exportedPublicKey)
     console.log("exportedPrivateKey", exportedPrivateKey)
-    self.chrome.tabs.sendMessage("publickey", {
-      type: "publicKey",
-      // videoId: urlParameters.get("v"),
-    });
+    // self.chrome.tabs.sendMessage("publickey", {
+    //   type: "publicKey",
+    //   // videoId: urlParameters.get("v"),
+    // });
     // self.document.dispatchEvent(new CustomEvent('publickey', {detail: exportedPublicKey}));
     
     chrome.storage.local.set({ publicKey: exportedPublicKey, privateKey: exportedPrivateKey }, () => {
