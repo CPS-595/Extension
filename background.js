@@ -152,4 +152,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
           // videoId: urlParameters.get("v"),
         });
     }
+    if (tab.url && tab.url.includes("localhost:3000/authentication/sign-in")) {
+      // const queryParameters = tab.url.split("?")[1];
+      // const urlParameters = new URLSearchParams(queryParameters);
+      console.log("called on tab", changeInfo)
+        console.log("sending")
+        chrome.tabs.sendMessage(tabId, {
+          type: "SIGNIN",
+          // videoId: urlParameters.get("v"),
+        });
+    }
   });

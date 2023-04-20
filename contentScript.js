@@ -20,10 +20,25 @@
     let youtubeLeftControls, youtubePlayer;
     let currentVideo = "";
     let currentVideoBookmarks = [];
+    let user;
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         console.log("in contentscript", obj)
         const { type }  = obj;
+        if (type === "SIGNIN") {
+            document.addEventListener("extension", (event) => {
+                user = event.detail.user;
+                console.log ("user object in extension", event.detail.user)
+
+                chrome.storage.local.get(['publicKey'], async (result) => {
+                    const publicKey = result.publicKey;
+
+                    document.dispatchEvent(new CustomEvent("extensioninstalled", { detail: { publicKey} }));
+                });
+
+
+            });
+        }
         if (type === "NEW") {
             const createNewButton = document.getElementById("create-new");
             if (createNewButton) {
