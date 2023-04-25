@@ -125,8 +125,18 @@
             if (createNewButton) {
                 createNewButton.addEventListener("click", createNewButtonHandler);
             }
+            const shareButton = document.getElementById("share");
+            if (shareButton) {
+                shareButton.addEventListener("click", shareButtonHandler);
+            }
+            console.log("shareButton", shareButton)
+            // if (createNewButton) {
+            //     createNewButton.addEventListener("click", createNewButtonHandler);
+            // }
 
             document.addEventListener("shareResource", async (event) => {
+                var e = document.getElementById("select-users");
+                console.log("doc", e);
                 console.log("SHARE", event.detail);
                 const decryptedPassword = await decryptPassword(event.detail.password.password)
                 console.log("decrypted Password", decryptedPassword)
@@ -140,50 +150,6 @@
                         password: encryptedPassword,
                     }
                 }));
-                // .then(decryptedPassword => {
-                //     console.log("decrypted Password", decryptedPassword)
-                // })
-                // const decryptPassword = event.detail.password.password
-                // let decryptedPass = ""
-                // chrome.storage.local.get(['privateKey'], async (result) => {
-                //     const privateKey = result.privateKey;
-
-                //     const importedPrivateKey =  await self.crypto.subtle.importKey(
-                //         "jwk", //can be "jwk" or "raw"
-                //         privateKey,
-                //           {   //these are the algorithm options
-                //             name: "RSA-OAEP",
-                //             hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-                //         },
-                //         false, //whether the key is extractable (i.e. can be used in exportKey)
-                //         ["decrypt"]
-                //     )
-                //     console.log("importedPrivateKey", importedPrivateKey)
-
-                //     const encryptedAb = str2ab(decryptPassword);
-                //     console.log("encryptedAb", encryptedAb) 
-                //     self.crypto.subtle.decrypt(
-                //         {
-                //             name: "RSA-OAEP",
-                //             //label: Uint8Array([...]) //optional
-                //         },
-                //         importedPrivateKey, //from generateKey or importKey above
-                //         encryptedAb //ArrayBuffer of the data
-                //     )
-                //     .then(function(decrypted){
-                        
-                //         console.log("decrypted", decrypted)
-                //         let dec = new TextDecoder();
-                //         console.log("decrypted", dec.decode(decrypted));
-                //         //returns an ArrayBuffer containing the decrypted data
-                //         // console.log("decrypted", new Uint8Array(null, decrypted)); 
-                //         decryptedPass = dec.decode(decrypted);
-                      
-                //     })
-                //     .catch(function(err){
-                //         console.error(err);
-                //     });
-                // });
 
             });
 
@@ -249,6 +215,27 @@
             createButton.addEventListener("click", createButtonHandler);
         }
         console.log("createButton", createButton)
+    }
+
+    const shareButtonHandler = async () => {
+        console.log("shareButtonHander called")
+        const password = JSON.parse(document.getElementById("encrypted-password").value);
+        const user = JSON.parse(document.getElementById("selected-user").value);
+        console.log(password);
+        console.log(user);
+        const decryptedPassword = await decryptPassword(password.password)
+        console.log("decrypted Password", decryptedPassword)
+        const encryptedPassword = await encryptPassword(decryptedPassword, user.publicKey)
+        console.log("encrypted Password for other user", encryptedPassword)
+// Sending the encrypted password to the UI 
+        document.dispatchEvent(new CustomEvent("addcredential",{ 
+            detail: {
+                userId: user.id,
+                credentialId: password.id,
+                password: encryptedPassword,
+            }
+        }));
+        
     }
 
     const createButtonHandler = async () => {
