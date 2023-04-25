@@ -1,5 +1,86 @@
 (() => {
     console.log("in content")
+
+    function encryptPassword (password, publicKey) {
+        return new Promise(async (resolve,reject) => {
+            const encryptPassword = password            
+            const importedPublicKey =  await self.crypto.subtle.importKey(
+                "jwk", //can be "jwk" or "raw"
+                JSON.parse(publicKey),
+                {   //these are the algorithm options
+                    name: "RSA-OAEP",
+                    hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+                },
+                false, //whether the key is extractable (i.e. can be used in exportKey)
+                ["encrypt"]
+            )
+            console.log("importedPublicKey", importedPublicKey)
+            let enc = new TextEncoder();
+            self.crypto.subtle.encrypt(
+                {
+                    name: "RSA-OAEP",
+                    //label: Uint8Array([...]) //optional
+                },
+                importedPublicKey, //from generateKey or importKey above
+                enc.encode(encryptPassword) //ArrayBuffer of data you want to encrypt
+            )
+            .then(function(encrypted){
+                //returns an ArrayBuffer containing the encrypted data
+                const encryptedString = ab2str(encrypted);
+                console.log("encryptedString", encryptedString);
+                resolve(encryptedString)
+            })
+            .catch(function(err){
+                reject(err);
+                console.error(err);
+            });
+        });
+        
+    }
+
+    function decryptPassword (password) {
+        return new Promise((resolve, reject) => {
+            const decryptPassword = password
+            let decryptedPass = ""
+            chrome.storage.local.get(['privateKey'], async (result) => {
+                const privateKey = result.privateKey;
+    
+                const importedPrivateKey =  await self.crypto.subtle.importKey(
+                    "jwk", //can be "jwk" or "raw"
+                    privateKey,
+                        {   //these are the algorithm options
+                        name: "RSA-OAEP",
+                        hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+                    },
+                    false, //whether the key is extractable (i.e. can be used in exportKey)
+                    ["decrypt"]
+                )
+                console.log("importedPrivateKey", importedPrivateKey)
+    
+                const encryptedAb = str2ab(decryptPassword);
+                self.crypto.subtle.decrypt(
+                    {
+                        name: "RSA-OAEP",
+                        //label: Uint8Array([...]) //optional
+                    },
+                    importedPrivateKey, //from generateKey or importKey above
+                    encryptedAb //ArrayBuffer of the data
+                )
+                .then(function(decrypted){
+                    let dec = new TextDecoder();
+                    //returns an ArrayBuffer containing the decrypted data
+                    // console.log("decrypted", new Uint8Array(null, decrypted)); 
+                    decryptedPass = dec.decode(decrypted);
+                    resolve(decryptedPass)   
+                })
+                .catch(function(err){
+                    reject(err)
+                    console.error(err);
+                });
+            });
+        })
+    }
+
     async function fetchData() {
         console.log("in fecth data")
         const options = {
@@ -44,6 +125,68 @@
             if (createNewButton) {
                 createNewButton.addEventListener("click", createNewButtonHandler);
             }
+
+            document.addEventListener("shareResource", async (event) => {
+                console.log("SHARE", event.detail);
+                const decryptedPassword = await decryptPassword(event.detail.password.password)
+                console.log("decrypted Password", decryptedPassword)
+                const encryptedPassword = await encryptPassword(decryptedPassword, event.detail.array[0].publicKey)
+                console.log("encrypted Password for other user", encryptedPassword)
+// Sending the encrypted password to the UI 
+                document.dispatchEvent(new CustomEvent("addcredential",{ 
+                    detail: {
+                        userId: event.detail.array[0].id,
+                        credentialId: event.detail.password.id,
+                        password: encryptedPassword,
+                    }
+                }));
+                // .then(decryptedPassword => {
+                //     console.log("decrypted Password", decryptedPassword)
+                // })
+                // const decryptPassword = event.detail.password.password
+                // let decryptedPass = ""
+                // chrome.storage.local.get(['privateKey'], async (result) => {
+                //     const privateKey = result.privateKey;
+
+                //     const importedPrivateKey =  await self.crypto.subtle.importKey(
+                //         "jwk", //can be "jwk" or "raw"
+                //         privateKey,
+                //           {   //these are the algorithm options
+                //             name: "RSA-OAEP",
+                //             hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+                //         },
+                //         false, //whether the key is extractable (i.e. can be used in exportKey)
+                //         ["decrypt"]
+                //     )
+                //     console.log("importedPrivateKey", importedPrivateKey)
+
+                //     const encryptedAb = str2ab(decryptPassword);
+                //     console.log("encryptedAb", encryptedAb) 
+                //     self.crypto.subtle.decrypt(
+                //         {
+                //             name: "RSA-OAEP",
+                //             //label: Uint8Array([...]) //optional
+                //         },
+                //         importedPrivateKey, //from generateKey or importKey above
+                //         encryptedAb //ArrayBuffer of the data
+                //     )
+                //     .then(function(decrypted){
+                        
+                //         console.log("decrypted", decrypted)
+                //         let dec = new TextDecoder();
+                //         console.log("decrypted", dec.decode(decrypted));
+                //         //returns an ArrayBuffer containing the decrypted data
+                //         // console.log("decrypted", new Uint8Array(null, decrypted)); 
+                //         decryptedPass = dec.decode(decrypted);
+                      
+                //     })
+                //     .catch(function(err){
+                //         console.error(err);
+                //     });
+                // });
+
+            });
+
             document.addEventListener("decryptpassword", async (event) => {
                 console.log("event", event.detail)
                 const password = event.detail.password;
@@ -202,44 +345,40 @@
       return String.fromCharCode.apply(null, new Uint8Array(buf));
     }
 
-    const decryptPassword = (password) => {
-
-    }
-
-    const encryptPassword = (password) => {
-      chrome.storage.local.get(['publicKey'], async (result) => {
-        const publicKey = result.publicKey;            
-        const importedPublicKey =  await self.crypto.subtle.importKey(
-          "jwk", //can be "jwk" or "raw"
-            publicKey,
-            {   //these are the algorithm options
-              name: "RSA-OAEP",
-              hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
-          },
-          false, //whether the key is extractable (i.e. can be used in exportKey)
-          ["encrypt"]
-        )
-        console.log("importedPublicKey", importedPublicKey)
-        let enc = new TextEncoder();
-        self.crypto.subtle.encrypt(
-          {
-              name: "RSA-OAEP",
-              //label: Uint8Array([...]) //optional
-          },
-          importedPublicKey, //from generateKey or importKey above
-          enc.encode(password) //ArrayBuffer of data you want to encrypt
-        )
-        .then(function(encrypted){
-            //returns an ArrayBuffer containing the encrypted data
-            const encryptedString = ab2str(encrypted);
-            console.log("encryptedString", encryptedString);
-            return encryptedString;
-        })
-        .catch(function(err){
-            console.error(err);
-        });
-      });
-    }
+    // const encryptPassword = (password) => {
+    //   chrome.storage.local.get(['publicKey'], async (result) => {
+    //     const publicKey = result.publicKey;            
+    //     const importedPublicKey =  await self.crypto.subtle.importKey(
+    //       "jwk", //can be "jwk" or "raw"
+    //         publicKey,
+    //         {   //these are the algorithm options
+    //           name: "RSA-OAEP",
+    //           hash: {name: "SHA-256"}, //can be "SHA-1", "SHA-256", "SHA-384", or "SHA-512"
+    //       },
+    //       false, //whether the key is extractable (i.e. can be used in exportKey)
+    //       ["encrypt"]
+    //     )
+    //     console.log("importedPublicKey", importedPublicKey)
+    //     let enc = new TextEncoder();
+    //     self.crypto.subtle.encrypt(
+    //       {
+    //           name: "RSA-OAEP",
+    //           //label: Uint8Array([...]) //optional
+    //       },
+    //       importedPublicKey, //from generateKey or importKey above
+    //       enc.encode(password) //ArrayBuffer of data you want to encrypt
+    //     )
+    //     .then(function(encrypted){
+    //         //returns an ArrayBuffer containing the encrypted data
+    //         const encryptedString = ab2str(encrypted);
+    //         console.log("encryptedString", encryptedString);
+    //         return encryptedString;
+    //     })
+    //     .catch(function(err){
+    //         console.error(err);
+    //     });
+    //   });
+    // }
 
     const newVideoLoaded = () => {
         const bookmarkBtnExists = document.getElementsByClassName("bookmark-btn")[0];
